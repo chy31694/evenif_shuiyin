@@ -1,14 +1,75 @@
 # encoding:utf-8
 
 from PIL import Image
-import piexif
+
 import os
 import os
 import subprocess
 import os
 import shutil
-
+from cryptography.fernet import Fernet
 from blind_watermark import WaterMark
+
+
+def encrypt(message: bytes, key: bytes) -> bytes:
+    return Fernet(key).encrypt(message)
+
+def decrypt(token: bytes, key: bytes) -> bytes:
+    return Fernet(key).decrypt(token)
+
+def key_read(data):
+    with open("key.txt", "r") as f: #打开文件
+        data = f.read() #读取文件
+    return data
+
+def jia_mi(message_in,out):
+    message = message_in
+    data = "wewq"
+    data = key_read(data)
+    out=encrypt(message.encode(), data)
+    return out
+def jie_mi(jiami,out):
+    message = jiami
+    data = "wewq"
+    data = key_read(data)
+    out=decrypt(jiami, data).decode()
+    return out
+
+
+
+
+def mod_key_gen():
+
+    try:
+     
+    
+        if os.path.exists("key.txt"):
+            print("密钥已经存在,是否替换或者覆盖，输入 \n 1: 不替换，不覆盖 \n 2 : 替换为新密钥，\n警告：用之前这个密钥加密过的水印将无法读取，除非密钥泄漏，请不要重新生成")
+            
+            work_mode = 0
+            work_mode = get_value(work_mode,"请选输入工作模式序号")
+            if work_mode != 0 and work_mode != 1 and work_mode != 2:
+                print("你输入的模式序号不存在")
+            if work_mode == 1:
+                print("已关闭")
+            if work_mode == 2:
+                key = Fernet.generate_key()
+                print("密钥数据，文件名：key.txt ,已经存储：", key.decode())
+                with open("key.txt","w") as f:
+                    f.write(key.decode()) 
+
+        
+        if not os.path.exists("key.txt"):
+            key = Fernet.generate_key()
+            print("密钥数据，文件名：key.txt ,已经存储：", key.decode())
+            with open("key.txt","w") as f:
+                f.write(key.decode()) 
+
+
+    except:
+        print("程序出错，请检查读写权限")
+
+    return 0
 
 def get_value(value_get,str_info):
    
@@ -70,16 +131,72 @@ def mod_00():
                 print(source)
                 shutil.copy(source, target_in_loop) 
                 print("复制完成")
-                cmd = ".\exiftool  -artist="+str(i)+" " + target_in_loop
-                #print(cmd)
+                message = '1'
+
+
+                jiami = " "
+                message = str(i)
+                jiami = jia_mi(message,jiami)
+                jiami= jiami.decode('UTF-8')
+
+                cmd = "exiftool  -artist="+jiami+" " + target_in_loop
+                print (cmd)
                 r1 = os.popen(cmd)
-                #print(r1.read())
+                print(r1.read())
                 print(str(i/shu_liang*100)+"%已经完成")
                 i =i+ 1
     
             input("复制完成")   
                 
                                 
+                            
+        except:
+            print("程序出错，可能是你输入的文件名称错误,,请从头开始")
+            attempts += 1
+            if attempts == 3000:
+                break
+    return 0
+def mod_02():
+   
+    attempts = 0
+    success = False
+    while attempts < 3000 and not success:
+        try:
+            yuantu_name_head = "abc"
+            yuantu_name_head = get_str(yuantu_name_head,"输入你的原图文件名,要带后缀,例如：abc.png/abc.jpg|不支持带汉字文件名")
+            source = './yuantu/'+yuantu_name_head
+            target = './shuchu/233313213.jpg'
+            
+            str_insert = "test"
+            str_insert = get_str(str_insert,"请输入你想要插入的内容，！")
+            source_in_loop = source
+            target_in_loop = './shuchu/zidingyi_'+"_"+yuantu_name_head
+
+            print(target)
+            print(source)
+            shutil.copy(source, target_in_loop) 
+            print("复制完成")
+
+            message = str_insert
+            jiami = ""
+            jiami = jia_mi(message,jiami)
+            jiami = jiami.decode('UTF-8')
+
+            cmd = "exiftool  -artist="+jiami+" " + target_in_loop
+            print (cmd)
+            r1 = os.popen(cmd)
+            print(r1.read())
+
+
+            
+            print("数据插入完成，数据已经被加密为")
+            cmd2 = "exiftool  -artist"+" " + target_in_loop
+            r2 = os.popen(cmd2)
+            print(r2.read())
+
+
+            
+               
                             
         except:
             print("程序出错，可能是你输入的文件名称错误,,请从头开始")
@@ -99,14 +216,21 @@ def mod_01():
             jiemi_name = get_str(jiemi_name,"输入你想要解密的文件名,要带后缀,例如：abc.png/abc.jpg|不支持带汉字文件名")
             jiemi_name = 'jiemi/'+jiemi_name
             print("正在寻找"+jiemi_name+"待解密文件")
-            cmd = ".\exiftool  -artist"+" " + jiemi_name
-            #print(cmd)
-            r1 = os.popen(cmd)
-                
-            print("解密信息如下，如为空，则此图无水印，数字为其序号")
-            print(r1.read())
+            #cmd = ".\exiftool  -artist"+" " + jiemi_name
+            #for imac
+            cmd2 = "exiftool  -artist"+" " + jiemi_name 
+            r2 = os.popen(cmd2)
+            print("解密数据如下：")
+            jiami_1 = r2.read()
+
+            daijiemi=jiami_1[34:]
+            out = "180"
+            res = bytes(daijiemi, 'utf-8') 
+            out = jie_mi(res,out)
+            print(out)
+
         except:
-            print("程序出错，可能是你输入文件名称错误,,请从头开始")
+            print("程序出错，可能是你输入文件名称错误,或文件不含待解密信息,请从头开始")
             attempts += 1
             if attempts == 3000:
                 break
@@ -131,7 +255,7 @@ def mod_1():
             bwm1.read_img(yuantu_name)
             print("图片已经被读取")
             shu_liang = 50
-            shu_liang = get_value(shu_liang,"输入你想生成的图片数量，目前最大支持50张哦")
+            shu_liang = get_value(shu_liang,"输入你想生成的图片数量，目前最大支持60张，\n 你可以自行放入wm_61/wm_62...，然后输入数量即可")
             i = 1
             int(i)
             int(shu_liang)
@@ -214,7 +338,7 @@ def mod_3():
             password_wm = get_value(password_wm,"请输入水印加密密码，只能是数字组合")
             password_img = get_value(password_img,"请输入原图加密密码，只能是数字组合")
             bwm1 = WaterMark(password_wm, password_img)
-            print("请输入你曾经对这张图加的水印尺寸：例如如果你的水印是640 x 480的，则它的长是640，宽是480，如果是使用默认水印，请两次输入260 \n")
+            print("请输入你曾经对这张图加的水印尺寸：例如如果你的水印是640 x 480的，则它的长是640，宽是480，如果是使用默认水印，请两次输入100 \n")
             x = 0
             y = 0 
             x = get_value(x,"请输入长:")
@@ -241,12 +365,13 @@ def mod_3():
 print("开发者：evenif/风栖木兮")
 print("开源代码地址：https://github.com/guofei9987/blind_watermark")
 print("本程序免费提供使用！")
-print("程序开始运行：")
+print("程序开始运行：所有选择请输入后按回车才会继续执行")
+print("使用本程序前，请先运行一次本文件夹下的exiftool.exe，\n 本程序调用其对exif信息进行读写")
 print("如程序出错，请检查你的输入内容，重新打开此程序即可")
-print("请注意，本程序需要和其下文件夹配合工作他们分别是:\n yuantu:放置原图\n shuiyin；存放水印\n jiemi存放等待解密文件\n shuichu输出文件夹\n 复制此程序时，请直接打包本程序所在文件夹")
+print("请注意，请直接解压文件夹使用，请勿更改文件结构\n本程序需要和其下文件夹配合工作他们分别是:\n yuantu:放置原图\n shuiyin；存放水印\n jiemi存放等待解密文件\n shuichu输出文件夹\n 复制此程序时，请直接打包本程序所在文件夹")
 
 #选择工作核心
-print("请选择程序工作内核：\n 1: Exif水印模式（不损失画质仅查原画） \n 2: 盲水印模式（损失画质，截图可查）")
+print("请选择程序工作内核：\n 1: Exif水印模式（不损失画质仅可查原画） \n 2: 盲水印模式（增加噪点，截图可查）")
 core_mode = 0
 core_mode=get_value(core_mode,"请选输入工作内核序号")
 if core_mode != 0 and core_mode != 1 and  core_mode != 2:
@@ -256,10 +381,10 @@ if core_mode == 0:
     print("核心选择，错误次数过多，已关闭")
 if core_mode == 1:
     print("已选择EXIF水印模式")
-    print("请选择程序工作模式：\n 1: 默认工作模式\n \n 2: 水印解密模式")
+    print("请选择程序工作模式：\n 1: 默认工作模式\n 2: 水印解密模式 \n 3: 自定义模式 \n 4: 生成水印加密密钥（加解密需要，自动生成，“key.txt”文件, 如需自定义，请更改其为44位密码，不够的可以用0补全）")
     work_mode = 0
     work_mode=get_value(work_mode,"请选输入工作模式序号")
-    if work_mode != 1 and work_mode != 1 and work_mode != 2 :
+    if work_mode != 1 and work_mode != 1 and work_mode != 2 and work_mode != 3 and work_mode != 4:
         print("你输入的工作模式序号不存在")
     if work_mode == 1 :    
         res = 1
@@ -267,6 +392,12 @@ if core_mode == 1:
     if work_mode == 2 :
         res = 1
         res = mod_01()
+    if work_mode == 3 :
+        res = 1
+        res = mod_02()
+    if work_mode == 4 :
+        res = 1
+        res = mod_key_gen()    
 
 
 
